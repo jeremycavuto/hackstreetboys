@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   AreaChart, Area, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
@@ -9,7 +9,7 @@ import {
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_BASE = process.env.NEXT_PUBLIC_BATTERY_API_URL || "http://localhost:8000";
-const SSE_URL  = `${API_BASE}/api/battery/stream`;
+const MAX_HOUR = 14399; // 600 days × 24 hours − 1
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function healthColor(soh) {
@@ -70,60 +70,53 @@ function CapTooltip({ active, payload, label, q0 = 50 }) {
 
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [data,         setData]         = useState(null);
-  const [connected,    setConnected]    = useState(false);
-  const [error,        setError]        = useState(null);
-  const [animSoh,      setAnimSoh]      = useState(0);
-  const [backendStatus, setBackendStatus] = useState("starting"); // "starting" | "ready" | "failed"
-  const sourceRef = useRef(null);
+  const [data,    setData]    = useState(null);
+  const [connected, setConnected] = useState(false);
+  const [error,   setError]   = useState(null);
+  const [animSoh, setAnimSoh] = useState(0);
+  const hourRef   = useRef(0);
+  const intervalRef = useRef(null);
 
-  // ── On mount: ping Next.js API route to start battery_api.py if not running ──
+  // ── Polling: increment hour by 1 each second, fetch snapshot ─────────────
   useEffect(() => {
-    async function startBackend() {
+    async function fetchSnapshot() {
       try {
-        setBackendStatus("starting");
-        const res = await fetch("/api/start-battery", { method: "POST" });
+        const res = await fetch(`${API_BASE}/api/battery/snapshot?hour=${hourRef.current}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        if (res.ok) {
-          setBackendStatus("ready");
-        } else {
-          setBackendStatus("failed");
-          setError(`Backend failed to start: ${json.message ?? "unknown error"}`);
-        }
+        setData(json);
+        setConnected(true);
+        setError(null);
+        hourRef.current = Math.min(hourRef.current + 1, MAX_HOUR);
       } catch (e) {
-        setBackendStatus("failed");
-        setError("Could not reach /api/start-battery — is Next.js running?");
+        setConnected(false);
+        setError("Connection lost — retrying…");
       }
     }
-    startBackend();
+
+    // Fetch immediately on mount, then every second
+    fetchSnapshot();
+    intervalRef.current = setInterval(fetchSnapshot, 1000);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
-  const connect = useCallback(() => {
-    if (sourceRef.current) sourceRef.current.close();
-    const es = new EventSource(SSE_URL);
-    sourceRef.current = es;
-    es.onopen    = () => { setConnected(true); setError(null); };
-    es.onmessage = (e) => { try { setData(JSON.parse(e.data)); } catch {} };
-    es.onerror   = () => {
-      setConnected(false); setError("Connection lost — retrying…");
-      es.close(); setTimeout(connect, 3000);
-    };
-  }, []);
+  // ── Reset: restart hour counter and refetch ───────────────────────────────
+  function handleReset() {
+    hourRef.current = 0;
+    setData(null);
+    setAnimSoh(0);
+    setError(null);
+  }
 
-  // Only start the SSE stream once the backend is confirmed ready
-  useEffect(() => {
-    if (backendStatus !== "ready") return;
-    connect();
-    return () => sourceRef.current?.close();
-  }, [backendStatus, connect]);
-
+  // ── Animate SOH number ────────────────────────────────────────────────────
   useEffect(() => {
     if (!data) return;
-    const target = data.soh; let cur = animSoh;
+    const target = data.soh;
+    let cur = animSoh;
     const step = () => {
       cur = cur + (target - cur) * 0.12;
-      setAnimSoh(Math.round(cur*10)/10);
-      if (Math.abs(cur-target) > 0.05) requestAnimationFrame(step);
+      setAnimSoh(Math.round(cur * 10) / 10);
+      if (Math.abs(cur - target) > 0.05) requestAnimationFrame(step);
       else setAnimSoh(target);
     };
     requestAnimationFrame(step);
@@ -133,87 +126,27 @@ export default function Dashboard() {
   const hl = data ? healthLabel(data.soh) : "—";
   const q0 = data?.q0 ?? 50;
 
-  // ── Backend starting splash ───────────────────────────────────────────────
-  if (backendStatus === "starting") {
-    return (
-      <div style={{
-        minHeight:"100vh", background:"#f0f4f8", display:"flex",
-        alignItems:"center", justifyContent:"center",
-        fontFamily:"'DM Mono','Courier New',monospace",
-      }}>
-        <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:36, marginBottom:16 }}>⚡</div>
-          <div style={{ fontSize:13, letterSpacing:3, color:"#64748b", marginBottom:8 }}>
-            STARTING BATTERY BACKEND
-          </div>
-          <div style={{ fontSize:10, color:"#94a3b8", letterSpacing:2 }}>
-            Launching battery_api.py · please wait…
-          </div>
-          <div style={{ marginTop:24, display:"flex", justifyContent:"center", gap:6 }}>
-            {[0,1,2].map(i => (
-              <div key={i} style={{
-                width:8, height:8, borderRadius:"50%", background:"#22c55e",
-                animation:`pulse 1.2s ease-in-out ${i*0.2}s infinite`,
-              }}/>
-            ))}
-          </div>
-          <style>{`@keyframes pulse{0%,100%{opacity:0.2}50%{opacity:1}}`}</style>
-        </div>
-      </div>
-    );
-  }
-
-  if (backendStatus === "failed") {
-    return (
-      <div style={{
-        minHeight:"100vh", background:"#f0f4f8", display:"flex",
-        alignItems:"center", justifyContent:"center",
-        fontFamily:"'DM Mono','Courier New',monospace",
-      }}>
-        <div style={{ textAlign:"center", maxWidth:420 }}>
-          <div style={{ fontSize:36, marginBottom:16 }}>⚠️</div>
-          <div style={{ fontSize:13, letterSpacing:3, color:"#ef4444", marginBottom:12 }}>
-            BACKEND FAILED TO START
-          </div>
-          <div style={{ fontSize:11, color:"#64748b", marginBottom:20, lineHeight:1.7 }}>
-            {error ?? "battery_api.py could not be launched. Check that Python is installed and the battery-backend folder is in your project root."}
-          </div>
-          <button
-            onClick={() => { setBackendStatus("starting"); setError(null); }}
-            style={{
-              padding:"8px 20px", background:"#0f172a", color:"#fff", border:"none",
-              borderRadius:8, fontSize:11, cursor:"pointer", letterSpacing:2,
-            }}
-          >RETRY</button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Combined capacity chart data ──────────────────────────────────────────
-  // Past: each entry has { day, q_pred, q_real }
-  // Bridge: connects past to future at current day
-  // Future: each entry has { day, q_pred_fc, q_real_fc, q_upper, q_lower }
   const combinedData = data ? (() => {
     const past = (data.cap_hist ?? []).map(p => ({
       day:    p.day,
-      q_pred: p.Q,       // model-estimated history
-      q_real: p.Q_true,  // ground-truth history
+      q_pred: p.Q,
+      q_real: p.Q_true,
     }));
 
     const bridge = {
-      day:      data.day,
-      q_pred:   data.q_now,
-      q_real:   data.q_true_now,
-      q_fc:     data.q_true_now,  // forecast starts from real Q
-      q_upper:  data.q_true_now,
-      q_lower:  data.q_true_now,
+      day:     data.day,
+      q_pred:  data.q_now,
+      q_real:  data.q_true_now,
+      q_fc:    data.q_true_now,
+      q_upper: data.q_true_now,
+      q_lower: data.q_true_now,
     };
 
     const fc = data.forecast;
     const future = (fc.days || []).map((d, i) => ({
       day:     d,
-      q_fc:    fc.q_real?.[i],   // single forecast anchored at real Q
+      q_fc:    fc.q_real?.[i],
       q_upper: fc.q_upper?.[i],
       q_lower: fc.q_lower?.[i],
     }));
@@ -268,18 +201,19 @@ export default function Dashboard() {
             <div style={{ fontSize:9, letterSpacing:3, color:"#94a3b8" }}>BATTERY TISAC LIVE MONITOR</div>
           </div>
         </div>
+
         <div style={{ display:"flex", alignItems:"center", gap:16, fontSize:11, color:"#64748b" }}>
           {error && <span style={{ color:"#f59e0b" }}><span className="dead-dot"/>{error}</span>}
-          {connected && !error && <span><span className="live-dot"/>LIVE STREAM</span>}
+          {connected && !error && <span><span className="live-dot"/>LIVE</span>}
           {data && (
             <span style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:99, padding:"4px 12px" }}>
               Hour&nbsp;<b>{data.hour}</b> · Day&nbsp;<b>{data.day}</b>
             </span>
           )}
-          <button onClick={connect} style={{
+          <button onClick={handleReset} style={{
             padding:"6px 14px", background:"#0f172a", color:"#fff", border:"none",
             borderRadius:8, fontSize:11, cursor:"pointer", letterSpacing:1,
-          }}>RECONNECT</button>
+          }}>RESET</button>
         </div>
       </header>
 
@@ -287,7 +221,8 @@ export default function Dashboard() {
 
         {/* ── ROW 1: SOH + Stats ── */}
         <div className="grid-2">
-          {/* SOH card — shows both predicted and real */}
+
+          {/* SOH card */}
           <div className="card fade-up">
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
               <div>
@@ -334,7 +269,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Stats: dual EOL/RUL */}
+          {/* Stats grid */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <StatCard label="Resistance" value={data?.r_now_mohm?.toFixed(3) ?? "—"} unit="mΩ"/>
             <StatCard
@@ -350,6 +285,12 @@ export default function Dashboard() {
               sub={data?.pred_rul_days_real != null ? `RUL: ${data.pred_rul_days_real} days` : ""}
               sub2={`95% band: ${data?.eol_band?.[0] ?? "—"}–${data?.eol_band?.[1] ?? "—"} d`}
               color="#16a34a"
+            />
+            <StatCard
+              label="Q₀ / Q_EOL"
+              value={`${data?.q0 ?? 50} / ${data?.q_eol ?? 35}`}
+              unit="Ah"
+              sub="Nominal / End-of-life threshold"
             />
           </div>
         </div>
@@ -390,7 +331,7 @@ export default function Dashboard() {
               <ReferenceLine y={data?.q_eol ?? 35} stroke="#e11d48" strokeDasharray="5 3"
                 label={{value:"EOL 70%", fill:"#e11d48", fontSize:9, position:"insideTopRight"}}/>
 
-              {/* Today */}
+              {/* Today marker */}
               {data?.day != null &&
                 <ReferenceLine x={data.day} stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="4 2"
                   label={{value:"now", fill:"#64748b", fontSize:9}}/>}
@@ -400,19 +341,19 @@ export default function Dashboard() {
                 <ReferenceLine x={data.pred_eol_day_real} stroke="#16a34a" strokeDasharray="3 3"
                   label={{value:"EOL", fill:"#16a34a", fontSize:8, position:"insideTopLeft"}}/>}
 
-              {/* CI band area (use Area trick via hidden Lines + fill) */}
+              {/* CI band lines (invisible, for reference) */}
               <Line type="monotone" dataKey="q_upper" stroke="none" dot={false} legendType="none" name="95% upper"/>
               <Line type="monotone" dataKey="q_lower" stroke="none" dot={false} legendType="none" name="95% lower"/>
 
-              {/* HISTORY: real Q (solid green) */}
+              {/* Real Q history (solid green) */}
               <Line type="monotone" dataKey="q_real" stroke="#16a34a" strokeWidth={2.5}
                 dot={false} name="Real Q" connectNulls={false}/>
 
-              {/* HISTORY: predicted Q (solid blue) */}
+              {/* Predicted Q history (solid blue) */}
               <Line type="monotone" dataKey="q_pred" stroke="#3b82f6" strokeWidth={2.5}
                 dot={false} name="Predicted Q" connectNulls={false}/>
 
-              {/* FUTURE: single forecast anchored at real Q (dashed green) */}
+              {/* Forecast anchored at real Q (dashed green) */}
               <Line type="monotone" dataKey="q_fc" stroke="#16a34a" strokeWidth={2}
                 strokeDasharray="7 4" dot={false} name="Forecast" connectNulls={false}/>
             </LineChart>
@@ -429,7 +370,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={data?.res_hist ?? []} margin={{top:4,right:4,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
-                <XAxis dataKey="day" tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`d${v}`}/>
+                <XAxis dataKey="day" tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false}
+                  tickFormatter={v=>`d${v}`}/>
                 <YAxis tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false} domain={["auto","auto"]}/>
                 <Tooltip contentStyle={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,fontSize:10}}/>
                 <Line type="monotone" dataKey="R" stroke="#ef4444" strokeWidth={2.5} dot={false} name="R [mΩ]"/>
@@ -472,7 +414,8 @@ export default function Dashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
               <XAxis dataKey="h" tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false} domain={[-0.1,1.2]} ticks={[0,1]}/>
+              <YAxis tick={{fill:"#94a3b8",fontSize:9}} axisLine={false} tickLine={false}
+                domain={[-0.1, 1.2]} ticks={[0, 1]}/>
               <Tooltip contentStyle={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,fontSize:10}}/>
               <Area type="stepAfter" dataKey="mode" stroke="#22c55e" strokeWidth={2}
                 fill="url(#modeGrad)" dot={false} name="Detected mode"/>
@@ -482,9 +425,10 @@ export default function Dashboard() {
 
         {/* ── FOOTER ── */}
         <div style={{ textAlign:"center", fontSize:10, color:"#cbd5e1", letterSpacing:2, paddingBottom:8 }}>
-          BATTERY TISAC · DUAL-MODE STREAMING INFERENCE · VOLTWATCH
+          BATTERY TISAC · DUAL-MODE POLLING INFERENCE · VOLTWATCH
           {data && ` · SOH ${data.soh}% (pred) / ${data.soh_true}% (real) · RUL ${data.pred_rul_days ?? ">1400"} DAYS`}
         </div>
+
       </main>
     </div>
   );
