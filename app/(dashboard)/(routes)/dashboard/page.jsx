@@ -1,35 +1,111 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { UserButton } from "@clerk/nextjs";
 
-const degradationData = [
-  { month: "Jan", health: 100 }, { month: "Mar", health: 98 },
-  { month: "May", health: 96 }, { month: "Jul", health: 93 },
-  { month: "Sep", health: 90 }, { month: "Nov", health: 87 },
-  { month: "Jan", health: 84 }, { month: "Mar", health: 81 },
-  { month: "Now", health: 78 },
-];
+// --- Car data (should match your home page) ---
+const CARS = {
+  "model-s": {
+    name: "2021 Tesla Model S",
+    nickname: "Daily Driver",
+    health: 78,
+    range: 312,
+    lastCharge: "2h ago",
+    odometer: "42,381 mi",
+    status: "good",
+  },
+  "model-3": {
+    name: "2023 Tesla Model 3",
+    nickname: "Weekend Car",
+    health: 94,
+    range: 348,
+    lastCharge: "1d ago",
+    odometer: "11,204 mi",
+    status: "excellent",
+  },
+  "bolt": {
+    name: "2020 Chevy Bolt",
+    nickname: "Commuter",
+    health: 61,
+    range: 189,
+    lastCharge: "3d ago",
+    odometer: "67,920 mi",
+    status: "degraded",
+  },
+};
 
-const cycleData = [
-  { week: "W1", cycles: 4 }, { week: "W2", cycles: 7 },
-  { week: "W3", cycles: 3 }, { week: "W4", cycles: 6 },
-  { week: "W5", cycles: 5 }, { week: "W6", cycles: 8 },
-  { week: "W7", cycles: 4 }, { week: "W8", cycles: 6 },
-];
+const DEFAULT_CAR = CARS["model-s"];
 
-const BATTERY_HEALTH = 78;
-const DAYS_LEFT = 312;
+// --- Chart data per car ---
+const DEGRADATION_DATA = {
+  "model-s": [
+    { month: "Jan", health: 100 }, { month: "Mar", health: 98 },
+    { month: "May", health: 96 }, { month: "Jul", health: 93 },
+    { month: "Sep", health: 90 }, { month: "Nov", health: 87 },
+    { month: "Jan", health: 84 }, { month: "Mar", health: 81 },
+    { month: "Now", health: 78 },
+  ],
+  "model-3": [
+    { month: "Jan", health: 100 }, { month: "Mar", health: 99 },
+    { month: "May", health: 98 }, { month: "Jul", health: 97 },
+    { month: "Sep", health: 96 }, { month: "Nov", health: 95 },
+    { month: "Jan", health: 95 }, { month: "Mar", health: 94 },
+    { month: "Now", health: 94 },
+  ],
+  "bolt": [
+    { month: "Jan", health: 100 }, { month: "Mar", health: 96 },
+    { month: "May", health: 91 }, { month: "Jul", health: 86 },
+    { month: "Sep", health: 80 }, { month: "Nov", health: 74 },
+    { month: "Jan", health: 68 }, { month: "Mar", health: 64 },
+    { month: "Now", health: 61 },
+  ],
+};
 
-export default function Dashboard() {
+const CYCLE_DATA = {
+  "model-s": [
+    { week: "W1", cycles: 4 }, { week: "W2", cycles: 7 },
+    { week: "W3", cycles: 3 }, { week: "W4", cycles: 6 },
+    { week: "W5", cycles: 5 }, { week: "W6", cycles: 8 },
+    { week: "W7", cycles: 4 }, { week: "W8", cycles: 6 },
+  ],
+  "model-3": [
+    { week: "W1", cycles: 2 }, { week: "W2", cycles: 3 },
+    { week: "W3", cycles: 2 }, { week: "W4", cycles: 4 },
+    { week: "W5", cycles: 3 }, { week: "W6", cycles: 2 },
+    { week: "W7", cycles: 3 }, { week: "W8", cycles: 2 },
+  ],
+  "bolt": [
+    { week: "W1", cycles: 6 }, { week: "W2", cycles: 9 },
+    { week: "W3", cycles: 7 }, { week: "W4", cycles: 8 },
+    { week: "W5", cycles: 9 }, { week: "W6", cycles: 10 },
+    { week: "W7", cycles: 8 }, { week: "W8", cycles: 9 },
+  ],
+};
+
+// Inner component that uses useSearchParams
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const carId = searchParams.get("car") || "model-s";
+  const car = CARS[carId] || DEFAULT_CAR;
+  const degradationData = DEGRADATION_DATA[carId] || DEGRADATION_DATA["model-s"];
+  const cycleData = CYCLE_DATA[carId] || CYCLE_DATA["model-s"];
+
+  const BATTERY_HEALTH = car.health;
+  const DAYS_LEFT = car.range;
+
   const [animatedHealth, setAnimatedHealth] = useState(0);
   const [animatedDays, setAnimatedDays] = useState(0);
 
   useEffect(() => {
+    setAnimatedHealth(0);
+    setAnimatedDays(0);
+
     const healthTimer = setTimeout(() => {
       let start = 0;
       const step = setInterval(() => {
@@ -49,10 +125,10 @@ export default function Dashboard() {
     }, 500);
 
     return () => { clearTimeout(healthTimer); clearTimeout(daysTimer); };
-  }, []);
+  }, [carId]);
 
   const healthColor = animatedHealth > 70 ? "#16a34a" : animatedHealth > 40 ? "#d97706" : "#dc2626";
-  const healthBg = animatedHealth > 70 ? "#dcfce7" : animatedHealth > 40 ? "#fef3c7" : "#fee2e2";
+  const healthBg   = animatedHealth > 70 ? "#dcfce7" : animatedHealth > 40 ? "#fef3c7" : "#fee2e2";
   const statusLabel = animatedHealth > 70 ? "GOOD" : animatedHealth > 40 ? "DEGRADED" : "CRITICAL";
 
   return (
@@ -90,24 +166,14 @@ export default function Dashboard() {
           margin-top: 16px;
           border: 1px solid #e2e8f0;
         }
-
         .health-bar-fill {
           height: 100%;
           border-radius: 99px;
           transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .segment-bar {
-          display: flex;
-          gap: 3px;
-          margin-top: 10px;
-        }
-        .segment {
-          flex: 1;
-          height: 6px;
-          border-radius: 99px;
-          transition: background 0.3s;
-        }
+        .segment-bar { display: flex; gap: 3px; margin-top: 10px; }
+        .segment { flex: 1; height: 6px; border-radius: 99px; transition: background 0.3s; }
 
         @keyframes pulse {
           0%, 100% { opacity: 1; }
@@ -131,6 +197,28 @@ export default function Dashboard() {
         .d2 { animation-delay: 0.15s; opacity: 0; }
         .d3 { animation-delay: 0.25s; opacity: 0; }
         .d4 { animation-delay: 0.35s; opacity: 0; }
+
+        .back-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: 'DM Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 2px;
+          color: #64748b;
+          background: none;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 7px 14px;
+          cursor: pointer;
+          transition: all 0.15s;
+          text-transform: uppercase;
+        }
+        .back-btn:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+          border-color: #cbd5e1;
+        }
       `}</style>
 
       {/* Header */}
@@ -142,6 +230,7 @@ export default function Dashboard() {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
+        {/* Left: logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div style={{
             width: 38, height: 38,
@@ -160,14 +249,41 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Right: car name + live dot + back + user */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#64748b", letterSpacing: "1px" }}>
             <span className="live-dot" />
-            LIVE · 2021 MODEL S
+            LIVE · {car.name.toUpperCase()}
           </div>
-          <UserButton afterSignOutUrl="/" />
+          <button className="back-btn" onClick={() => router.push("/home")}>
+            ← Garage
+          </button>
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </header>
+
+      {/* Car subtitle bar */}
+      <div style={{
+        background: "#fff",
+        borderBottom: "1px solid #f1f5f9",
+        padding: "10px 40px",
+        display: "flex",
+        alignItems: "center",
+        gap: "16px",
+      }}>
+        <span style={{ fontSize: "9px", letterSpacing: "3px", color: "#94a3b8", textTransform: "uppercase" }}>
+          {car.nickname}
+        </span>
+        <span style={{ color: "#e2e8f0" }}>·</span>
+        <span style={{ fontSize: "9px", letterSpacing: "2px", color: "#94a3b8" }}>
+          Odometer: {car.odometer}
+        </span>
+        <span style={{ color: "#e2e8f0" }}>·</span>
+        <span style={{ fontSize: "9px", letterSpacing: "2px", color: "#94a3b8" }}>
+          Last Charged: {car.lastCharge}
+        </span>
+      </div>
 
       {/* Main */}
       <main style={{ padding: "32px 40px", maxWidth: "1100px", margin: "0 auto" }}>
@@ -225,42 +341,31 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Days Remaining */}
+          {/* Est. Range */}
           <div className="card fade-up d2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-            <div className="stat-label">Est. Days of Health Remaining</div>
+            <div className="stat-label">Est. Range</div>
             <div style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: "88px",
+              fontSize: "72px",
               lineHeight: 1,
               color: "#0f172a",
-              letterSpacing: "-2px",
-              marginTop: "8px",
+              letterSpacing: "-1px",
             }}>
               {animatedDays}
             </div>
-            <div style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: "20px",
-              color: "#94a3b8",
-              letterSpacing: "6px",
-              marginTop: "4px",
-            }}>
-              DAYS
-            </div>
-            <div style={{ marginTop: "16px", fontSize: "10px", color: "#94a3b8", letterSpacing: "1px" }}>
-              ≈ {(DAYS_LEFT / 365).toFixed(1)} years remaining
+            <div style={{ fontSize: "11px", color: "#94a3b8", letterSpacing: "2px", marginTop: "6px" }}>
+              MILES REMAINING
             </div>
             <div style={{
-              marginTop: "10px",
-              padding: "5px 14px",
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              marginTop: "16px",
+              padding: "6px 14px",
+              background: "#f1f5f9",
               borderRadius: "99px",
-              fontSize: "9px",
-              letterSpacing: "2px",
-              color: "#94a3b8",
+              fontSize: "10px",
+              color: "#64748b",
+              letterSpacing: "1px",
             }}>
-              REPLACE BY 2028
+              Last charged {car.lastCharge}
             </div>
           </div>
         </div>
@@ -268,29 +373,29 @@ export default function Dashboard() {
         {/* Charts Row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
-          {/* Health Degradation Over Time */}
+          {/* Degradation Over Time */}
           <div className="card fade-up d3">
             <div style={{ marginBottom: "20px" }}>
-              <div className="stat-label">Health Degradation</div>
-              <div style={{ fontSize: "13px", color: "#64748b" }}>Over time (2-year view)</div>
+              <div className="stat-label">Battery Degradation</div>
+              <div style={{ fontSize: "13px", color: "#64748b" }}>Health over vehicle lifetime</div>
             </div>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={degradationData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                 <defs>
                   <linearGradient id="healthGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                    <stop offset="5%" stopColor={healthColor} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={healthColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} domain={[70, 102]} />
+                <YAxis domain={[60, 100]} tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "11px", fontFamily: "DM Mono", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
                   labelStyle={{ color: "#94a3b8" }}
-                  itemStyle={{ color: "#16a34a" }}
+                  itemStyle={{ color: healthColor }}
                 />
-                <Area type="monotone" dataKey="health" stroke="#16a34a" strokeWidth={2.5} fill="url(#healthGrad)" dot={{ fill: "#16a34a", r: 3, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="health" stroke={healthColor} strokeWidth={2.5} fill="url(#healthGrad)" dot={{ fill: healthColor, r: 3, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -318,5 +423,14 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Wrap in Suspense because useSearchParams requires it in Next.js 13+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f0f4f8" }} />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
