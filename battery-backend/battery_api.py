@@ -152,21 +152,28 @@ class ModeDetector:
         return self.state
 
 # ── forecast ──────────────────────────────────────────────────────────────────
-def run_forecast(cur_h, cum_d, cum_r, q_hist, r_hist, days=300):
+def run_forecast(cur_h, cum_d, cum_r, q_hist, r_hist, q_true_now=None, days=300):
     """
-    Anchor-corrected forecast:
-      - Ask the model what Q it predicts at the CURRENT hour  => anchor_q_model
-      - Ask the model what Q it predicts at each FUTURE hour  => qf_raw
-      - Compute delta = qf_raw - anchor_q_model  (relative degradation from now)
-      - Final forecast = q_now + delta  (starts from actual current state)
-    This ensures EOL moves as the real battery degrades.
+    Produces two anchor-corrected forecasts:
+      1. Anchored at q_now (model-estimated current Q)  → primary forecast
+      2. Anchored at q_true_now (ground-truth current Q) → real-anchored forecast
+
+    For each:
+      - Get model prediction at current hour (anchor_q_model)
+      - Get model predictions at future hours (qf_raw)
+      - delta = qf_raw - anchor_q_model  (relative degradation shape from model)
+      - forecast = anchor + delta
+
+    EOL is detected when the forecast Q crosses q_eol (= 70% of q0 = 35 Ah).
     """
     t_max = drive_norm.t_max_train_hr
     q_eol = drive_norm.q_eol
     q_now = float(q_hist[-1]) if len(q_hist) else drive_norm.q0
     r_now = float(r_hist[-1]) if len(r_hist) else drive_norm.r0
+    if q_true_now is None:
+        q_true_now = q_now
 
-    # anchor: model prediction at current hour
+    # anchor: model prediction at current hour (used for delta correction)
     cur_row = make_feat(cur_h, 0.0, float(cum_d), float(cum_r), t_max)[None,:]
     aq_d, _, _, _ = predict(drive_model, drive_norm, drive_resid, cur_row)
     aq_r, _, _, _ = predict(rest_model,  rest_norm,  rest_resid,  cur_row)
@@ -196,38 +203,57 @@ def run_forecast(cur_h, cum_d, cum_r, q_hist, r_hist, days=300):
         i=np.where(modes==0)[0]; q,sd,r,_=predict(rest_model,rest_norm,rest_resid,X_f[i])
         qf_raw[i]=q; rf_raw[i]=r; qsdf[i]=sd
 
-    # anchor correction: shift model curve to start at real current Q
-    delta       = qf_raw.astype(float) - anchor_q
-    q_anchored  = np.clip(q_now + delta, 0.0, drive_norm.q0)
-
-    # monotone-decreasing smoothing anchored at current state
-    q_joined = np.concatenate([[q_now], q_anchored])
-    r_joined = np.concatenate([[r_now], rf_raw.astype(float)])
-    q_phys, _ = enforce_physics(q_joined, r_joined, q0=q_now, r0=r_now, a=0.10)
-    q_f_phys  = q_phys[1:]
-
     # uncertainty grows with horizon
     qsdf = qsdf * (1.0 + 0.002*np.arange(len(qsdf)))
+
+    # ── forecast anchored at model-estimated q_now ────────────────────────────
+    delta      = qf_raw.astype(float) - anchor_q
+    q_anch     = np.clip(q_now + delta, 0.0, drive_norm.q0)
+    q_joined   = np.concatenate([[q_now], q_anch])
+    r_joined   = np.concatenate([[r_now], rf_raw.astype(float)])
+    q_phys, _  = enforce_physics(q_joined, r_joined, q0=q_now, r0=r_now, a=0.10)
+    q_f_phys   = q_phys[1:]
+
+    # ── forecast anchored at ground-truth q_true_now ──────────────────────────
+    q_anch_real   = np.clip(q_true_now + delta, 0.0, drive_norm.q0)
+    q_joined_real = np.concatenate([[q_true_now], q_anch_real])
+    q_phys_real, _ = enforce_physics(q_joined_real, r_joined, q0=q_true_now, r0=r_now, a=0.10)
+    q_f_phys_real  = q_phys_real[1:]
 
     # daily aggregate
     fut_h   = np.arange(cur_h+1, cur_h+1+days*24)
     day_arr = fut_h // 24
-    d_l, q_l, sd_l = [], [], []
+    d_l, q_l, sd_l, q_real_l = [], [], [], []
     for d in np.unique(day_arr):
         mask=day_arr==d; last=np.where(mask)[0][-1]
-        d_l.append(int(d)); q_l.append(float(q_f_phys[last])); sd_l.append(float(qsdf[last]))
+        d_l.append(int(d))
+        q_l.append(float(q_f_phys[last]))
+        sd_l.append(float(qsdf[last]))
+        q_real_l.append(float(q_f_phys_real[last]))
 
-    d_arr = np.array(d_l); q_arr = np.array(q_l); sd_arr = np.array(sd_l)
+    d_arr    = np.array(d_l)
+    q_arr    = np.array(q_l)
+    qr_arr   = np.array(q_real_l)
+    sd_arr   = np.array(sd_l)
     z = 1.96
-    ei  = np.where(q_arr <= q_eol)[0]
+
+    # EOL from model-predicted anchor
+    ei  = np.where(q_arr  <= q_eol)[0]
     elo = np.where((q_arr + z*sd_arr) <= q_eol)[0]
     ehi = np.where((q_arr - z*sd_arr) <= q_eol)[0]
     pred_eol = int(d_arr[ei[0]]) if ei.size else None
+
+    # EOL from real anchor
+    ei_r = np.where(qr_arr <= q_eol)[0]
+    pred_eol_real = int(d_arr[ei_r[0]]) if ei_r.size else None
+
     return {
-        "day_f":     d_l[:120],
-        "q_day_f":   q_l[:120],
-        "qsd_day_f": sd_l[:120],
-        "pred_eol_day": pred_eol,
+        "day_f":           d_l[:120],
+        "q_day_f":         q_l[:120],
+        "q_day_f_real":    q_real_l[:120],
+        "qsd_day_f":       sd_l[:120],
+        "pred_eol_day":    pred_eol,
+        "pred_eol_day_real": pred_eol_real,
         "eol_band": [
             int(d_arr[elo[0]]) if elo.size else None,
             int(d_arr[ehi[0]]) if ehi.size else None,
@@ -281,6 +307,8 @@ class SimState:
         self.detector=ModeDetector()
         self.q_raw=[]; self.r_raw=[]; self.qsd=[]; self.e_meas=[]; self.e_hat=[]; self.modes=[]
         self.q_disp=[]; self.r_disp=[]
+        # track true Q history (daily samples for chart)
+        self.q_true_hist=[]
         self.fc={}; self.last_fc_h=-99; self.last={}
 
     def step(self):
@@ -300,34 +328,77 @@ class SimState:
         q_d,r_d=enforce_physics(np.array(self.q_raw),np.array(self.r_raw),drive_norm.q0,drive_norm.r0)
         self.q_disp=q_d.tolist(); self.r_disp=r_d.tolist()
         q_now=float(q_d[-1]); r_now=float(r_d[-1])
-        soh=float(np.clip(100*q_now/drive_norm.q0,0,110))
+
+        # ground truth Q at this hour
+        q_true_now = float(self.Q_true[k])
+        soh      = float(np.clip(100*q_now      / drive_norm.q0, 0, 110))
+        soh_true = float(np.clip(100*q_true_now / drive_norm.q0, 0, 110))
+
         day_now=self.hour//24
         if self.hour-self.last_fc_h>=24:
-            self.fc=run_forecast(self.hour,self.cum_d,self.cum_r,q_d,r_d)
+            self.fc=run_forecast(self.hour, self.cum_d, self.cum_r, q_d, r_d,
+                                 q_true_now=q_true_now)
             self.last_fc_h=self.hour
-        fc=self.fc; pred_eol=fc.get("pred_eol_day")
-        pred_rul=max(0,pred_eol-day_now) if pred_eol is not None else None
-        # windowed history for charts (last 14 days / 60 days)
+
+        fc=self.fc
+        pred_eol      = fc.get("pred_eol_day")
+        pred_eol_real = fc.get("pred_eol_day_real")
+        pred_rul      = max(0, pred_eol      - day_now) if pred_eol      is not None else None
+        pred_rul_real = max(0, pred_eol_real - day_now) if pred_eol_real is not None else None
+
+        # windowed history for charts (last 60 days, sampled daily)
         ew=min(len(self.e_meas),336); dw=min(len(self.q_disp),60*24)
-        cap_hist=[{"day":(self.hour-dw+i)//24,"Q":float(self.q_disp[-dw:][i])} for i in range(0,dw,24)]
+
+        # cap_hist: predicted Q and real Q side-by-side per day
+        cap_hist=[]
+        for i in range(0, dw, 24):
+            hour_idx = self.hour - dw + i
+            day_idx  = hour_idx // 24
+            true_k   = hour_idx % self.total_h
+            cap_hist.append({
+                "day":   day_idx,
+                "Q":     float(self.q_disp[-dw:][i]),           # model-predicted
+                "Q_true": float(self.Q_true[true_k]),           # ground truth
+            })
+
         res_hist=[{"day":(self.hour-dw+i)//24,"R":float(self.r_disp[-dw:][i])*1e3} for i in range(0,dw,24)]
         e_hist=[{"h":self.hour-ew+i,"measured":float(self.e_meas[-ew:][i]),"model":float(self.e_hat[-ew:][i])} for i in range(ew)]
         m_hist=[{"h":self.hour-ew+i,"mode":int(self.modes[-ew:][i])} for i in range(ew)]
         q_sd_arr=np.array(self.qsd); qsd_day=float(q_sd_arr[-1]) if q_sd_arr.size else 0.0
+
         event={
-            "hour":self.hour,"day":day_now,
-            "soh":round(soh,2),"q_now":round(q_now,3),"r_now_mohm":round(r_now*1e3,3),
-            "mode":m_det,"mode_label":"Driving" if m_det==1 else "Resting",
-            "q0":drive_norm.q0,"q_eol":drive_norm.q_eol,
-            "pred_eol_day":pred_eol,"pred_rul_days":pred_rul,
-            "eol_band":fc.get("eol_band",[None,None]),
-            "forecast":{
-                "days":fc.get("day_f",[]),"q":fc.get("q_day_f",[]),
-                "q_upper":[q+1.96*sd for q,sd in zip(fc.get("q_day_f",[]),fc.get("qsd_day_f",[]))],
-                "q_lower":[max(0,q-1.96*sd) for q,sd in zip(fc.get("q_day_f",[]),fc.get("qsd_day_f",[]))],
+            "hour": self.hour, "day": day_now,
+            # predicted state
+            "soh":      round(soh, 2),
+            "q_now":    round(q_now, 3),
+            # real/true state
+            "soh_true":     round(soh_true, 2),
+            "q_true_now":   round(q_true_now, 3),
+            "r_now_mohm":   round(r_now*1e3, 3),
+            "mode":         m_det,
+            "mode_label":   "Driving" if m_det==1 else "Resting",
+            "q0":           drive_norm.q0,
+            "q_eol":        drive_norm.q_eol,
+            # EOL/RUL from predicted anchor
+            "pred_eol_day":  pred_eol,
+            "pred_rul_days": pred_rul,
+            # EOL/RUL from real anchor
+            "pred_eol_day_real":  pred_eol_real,
+            "pred_rul_days_real": pred_rul_real,
+            "eol_band": fc.get("eol_band", [None, None]),
+            "forecast": {
+                "days":           fc.get("day_f", []),
+                # forecast from model-predicted anchor
+                "q":              fc.get("q_day_f", []),
+                "q_upper":        [q+1.96*sd for q,sd in zip(fc.get("q_day_f",[]), fc.get("qsd_day_f",[]))],
+                "q_lower":        [max(0,q-1.96*sd) for q,sd in zip(fc.get("q_day_f",[]), fc.get("qsd_day_f",[]))],
+                # forecast from real/true anchor
+                "q_real":         fc.get("q_day_f_real", []),
             },
-            "cap_hist":cap_hist,"res_hist":res_hist,
-            "energy_hist":e_hist,"mode_hist":m_hist,
+            "cap_hist":    cap_hist,
+            "res_hist":    res_hist,
+            "energy_hist": e_hist,
+            "mode_hist":   m_hist,
         }
         self.last=event; self.hour+=1; return event
 

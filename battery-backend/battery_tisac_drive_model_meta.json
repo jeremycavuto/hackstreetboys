@@ -60,7 +60,7 @@
     "t_max_train_hr": 16799.0,
     "q0": 50.0,
     "r0": 0.005,
-    "q_eol": 40.0,
+    "q_eol": 35.0,
     "mode_name": "driving"
   },
   "resid_stats": {
