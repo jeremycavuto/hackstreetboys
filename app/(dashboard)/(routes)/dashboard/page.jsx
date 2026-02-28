@@ -86,12 +86,12 @@ function CustomTooltip({ active, payload, label, accentColor }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: "#0d1520", border: `1px solid ${accentColor}44`,
+      background: "#152335", border: `1px solid ${accentColor}44`,
       borderRadius: 8, padding: "10px 14px",
       fontSize: 11, fontFamily: "'DM Mono', monospace",
       boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 0 1px ${accentColor}22`,
     }}>
-      <div style={{ color: "#4a6080", letterSpacing: 2, marginBottom: 4, fontSize: 9 }}>{label}</div>
+      <div style={{ color: "#6a85a0", letterSpacing: 2, marginBottom: 4, fontSize: 9 }}>{label}</div>
       <div style={{ color: accentColor, fontWeight: 500 }}>
         {payload[0].value}{payload[0].name === "health" ? "%" : " cycles"}
       </div>
@@ -121,7 +121,7 @@ function DashboardContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#050a12",
+      background: "#0d1b2a",
       fontFamily: "'DM Mono', monospace",
       color: "#e2e8f0",
     }}>
@@ -130,10 +130,10 @@ function DashboardContent() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --surface: #0d1520;
-          --surface2: #111c2d;
-          --border: #1e2d3d;
-          --muted: #4a6080;
+          --surface: #152335;
+          --surface2: #1a2d42;
+          --border: #243850;
+          --muted: #6a85a0;
           --green: #22c55e;
         }
 
@@ -194,7 +194,7 @@ function DashboardContent() {
         .card::after {
           content: '';
           position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, var(--card-line, #1e2d3d), transparent);
+          background: linear-gradient(90deg, transparent, var(--card-line, #243850), transparent);
         }
 
         .stat-label {
@@ -235,9 +235,9 @@ function DashboardContent() {
         .segment { flex:1; height:5px; border-radius:99px; }
 
         .health-track {
-          height: 10px; background: #1e2d3d;
+          height: 10px; background: #243850;
           border-radius: 99px; overflow: hidden; margin-top: 14px;
-          border: 1px solid #263548;
+          border: 1px solid #2e4560;
         }
         .health-fill {
           height: 100%; border-radius: 99px;
@@ -265,7 +265,7 @@ function DashboardContent() {
           }}>⚡</div>
           <div>
             <div className="voltwatch-logo">VOLTWATCH</div>
-            <div style={{ fontSize: 8, letterSpacing: 3, color: "#1e3a5a", marginTop: -2 }}>
+            <div style={{ fontSize: 8, letterSpacing: 3, color: "#2a4f70", marginTop: -2 }}>
               EV BATTERY INTELLIGENCE
             </div>
           </div>
@@ -273,7 +273,7 @@ function DashboardContent() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{
-            fontSize: 11, letterSpacing: 2, color: "#2a4a6a",
+            fontSize: 11, letterSpacing: 2, color: "#3d6080",
             fontVariantNumeric: "tabular-nums",
           }}>
             {time}
@@ -323,14 +323,14 @@ function DashboardContent() {
                   textShadow: `0 0 40px ${hc}44`,
                 }}>
                   <AnimatedNumber target={car.health} />
-                  <span style={{ fontSize: 36, color: "#1e2d3d", marginLeft: 4 }}>%</span>
+                  <span style={{ fontSize: 36, color: "#243850", marginLeft: 4 }}>%</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div className="tag" style={{ color: status.color, borderColor: `${status.color}40` }}>
                   {status.label}
                 </div>
-                <div style={{ fontSize: 9, color: "#2a4a6a", marginTop: 8, letterSpacing: 2 }}>
+                <div style={{ fontSize: 9, color: "#3d6080", marginTop: 8, letterSpacing: 2 }}>
                   {100 - car.health}% DEGRADED
                 </div>
               </div>
@@ -347,15 +347,15 @@ function DashboardContent() {
             <div className="segment-bar">
               {Array.from({ length: 30 }).map((_, i) => (
                 <div key={i} className="segment" style={{
-                  background: i < Math.floor(car.health / (100/30)) ? `${hc}cc` : "#1a2535",
+                  background: i < Math.floor(car.health / (100/30)) ? `${hc}cc` : "#1f3248",
                   boxShadow: i < Math.floor(car.health / (100/30)) ? `0 0 4px ${hc}44` : "none",
                 }} />
               ))}
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
-              <span style={{ fontSize: 8, color: "#2a4a6a", letterSpacing: 2 }}>0 · CRITICAL</span>
-              <span style={{ fontSize: 8, color: "#2a4a6a", letterSpacing: 2 }}>100 · OPTIMAL</span>
+              <span style={{ fontSize: 8, color: "#3d6080", letterSpacing: 2 }}>0 · CRITICAL</span>
+              <span style={{ fontSize: 8, color: "#3d6080", letterSpacing: 2 }}>100 · OPTIMAL</span>
             </div>
           </div>
 
@@ -378,17 +378,17 @@ function DashboardContent() {
             }}>
               <AnimatedNumber target={car.daysLeft} duration={1400} />
             </div>
-            <div style={{ fontSize: 9, color: "#4a6080", letterSpacing: 3, marginTop: 6 }}>
+            <div style={{ fontSize: 9, color: "#6a85a0", letterSpacing: 3, marginTop: 6 }}>
               DAYS REMAINING
             </div>
-            <div style={{ fontSize: 9, color: "#2a4a6a", letterSpacing: 1, marginTop: 4 }}>
+            <div style={{ fontSize: 9, color: "#3d6080", letterSpacing: 1, marginTop: 4 }}>
               ≈ {Math.round(car.daysLeft / 365 * 10) / 10} years
             </div>
             <div style={{
               marginTop: 16, padding: "6px 14px",
               background: "rgba(30,45,61,0.6)",
-              border: "1px solid #1e2d3d",
-              borderRadius: 99, fontSize: 9, color: "#4a6080", letterSpacing: 1,
+              border: "1px solid #243850",
+              borderRadius: 99, fontSize: 9, color: "#6a85a0", letterSpacing: 1,
             }}>
               Based on current degradation rate
             </div>
@@ -402,7 +402,7 @@ function DashboardContent() {
           <div className="card fade-up d4" style={{ "--card-line": hc }}>
             <div style={{ marginBottom: 20 }}>
               <div className="stat-label">Battery Degradation</div>
-              <div style={{ fontSize: 12, color: "#4a6080", letterSpacing: 1 }}>Health over vehicle lifetime</div>
+              <div style={{ fontSize: 12, color: "#6a85a0", letterSpacing: 1 }}>Health over vehicle lifetime</div>
             </div>
             <ResponsiveContainer width="100%" height={190}>
               <AreaChart data={degradationData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
@@ -412,9 +412,9 @@ function DashboardContent() {
                     <stop offset="95%" stopColor={hc} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[55, 100]} tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f3248" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: "#3d6080", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <YAxis domain={[55, 100]} tick={{ fill: "#3d6080", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip accentColor={hc} />} />
                 <Area type="monotone" dataKey="health" stroke={hc} strokeWidth={2}
                   fill={`url(#grad-${carId})`}
@@ -429,7 +429,7 @@ function DashboardContent() {
           <div className="card fade-up d5" style={{ "--card-line": ac }}>
             <div style={{ marginBottom: 20 }}>
               <div className="stat-label">Predicted Battery Decay</div>
-              <div style={{ fontSize: 12, color: "#4a6080", letterSpacing: 1 }}>Projected health over next 14 months</div>
+              <div style={{ fontSize: 12, color: "#6a85a0", letterSpacing: 1 }}>Projected health over next 14 months</div>
             </div>
             <ResponsiveContainer width="100%" height={190}>
               <AreaChart data={predictedDecayData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
@@ -439,14 +439,14 @@ function DashboardContent() {
                     <stop offset="95%" stopColor={ac} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f3248" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: "#3d6080", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
                 <YAxis
                   domain={[
                     Math.floor(Math.min(...predictedDecayData.map(d => d.health)) - 3),
                     Math.ceil(Math.max(...predictedDecayData.map(d => d.health)) + 1),
                   ]}
-                  tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }}
+                  tick={{ fill: "#3d6080", fontSize: 9, fontFamily: "DM Mono" }}
                   axisLine={false} tickLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
@@ -469,7 +469,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#050a12" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#0d1b2a" }} />}>
       <DashboardContent />
     </Suspense>
   );

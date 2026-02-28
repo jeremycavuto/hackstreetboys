@@ -120,7 +120,7 @@ export default function HomePage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#050a12",
+      background: "#0d1b2a",
       fontFamily: "'DM Mono', monospace",
       color: "#e2e8f0",
       overflow: "hidden",
@@ -133,10 +133,10 @@ export default function HomePage() {
         :root {
           --green: #22c55e;
           --green-glow: #22c55e44;
-          --surface: #0d1520;
-          --surface2: #111c2d;
-          --border: #1e2d3d;
-          --muted: #4a6080;
+          --surface: #152335;
+          --surface2: #1a2d42;
+          --border: #243850;
+          --muted: #6a85a0;
         }
 
         /* Animated grid background */
@@ -196,7 +196,7 @@ export default function HomePage() {
 
         .splash {
           position: fixed; inset: 0; z-index: 200;
-          background: #020810;
+          background: #08121e;
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           animation: splashIn 0.4s ease;
@@ -266,7 +266,7 @@ export default function HomePage() {
           font-family: 'DM Mono', monospace;
           transform: translateY(100%);
           transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
-          color: #020810;
+          color: #08121e;
           font-weight: 600;
         }
         .car-card:hover .cta-strip { transform: translateY(0); }
@@ -286,7 +286,7 @@ export default function HomePage() {
         }
 
         .health-track {
-          height: 3px; background: #1e2d3d;
+          height: 3px; background: #243850;
           border-radius: 99px; overflow: hidden; margin-top: 6px;
         }
         .health-fill {
@@ -359,7 +359,7 @@ export default function HomePage() {
 
           {/* WELCOME */}
           <div style={{
-            fontSize: "13px", letterSpacing: "8px", color: "#4a6080",
+            fontSize: "13px", letterSpacing: "8px", color: "#6a85a0",
             textTransform: "uppercase", marginBottom: "12px",
           }}>
             VOLTWATCH · EV HEALTH
@@ -385,7 +385,7 @@ export default function HomePage() {
 
           {/* Loading bar */}
           <div style={{
-            width: 160, height: 1, background: "#1e2d3d",
+            width: 160, height: 1, background: "#243850",
             borderRadius: 99, marginTop: 40, overflow: "hidden",
           }}>
             <div style={{
@@ -422,7 +422,7 @@ export default function HomePage() {
               }}>⚡</div>
               <div>
                 <div className="voltwatch-logo">VOLTWATCH</div>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: "#2a4a6a", marginTop: -2 }}>
+                <div style={{ fontSize: 8, letterSpacing: 3, color: "#3d6080", marginTop: -2 }}>
                   EV BATTERY INTELLIGENCE
                 </div>
               </div>
@@ -441,7 +441,7 @@ export default function HomePage() {
                 LIVE MONITORING
               </div>
               <div style={{
-                fontSize: 10, letterSpacing: 2, color: "#4a6080",
+                fontSize: 10, letterSpacing: 2, color: "#6a85a0",
                 fontVariantNumeric: "tabular-nums",
               }}>
                 {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
@@ -463,7 +463,7 @@ export default function HomePage() {
               }}>
                 {firstName.toUpperCase()}'S FLEET
               </h1>
-              <p style={{ fontSize: 11, color: "#4a6080", marginTop: 8, letterSpacing: 1 }}>
+              <p style={{ fontSize: 11, color: "#6a85a0", marginTop: 8, letterSpacing: 1 }}>
                 Select a vehicle to open its live battery intelligence dashboard
               </p>
             </div>
@@ -485,7 +485,7 @@ export default function HomePage() {
                     fontFamily: "'Bebas Neue', sans-serif",
                     fontSize: 34, color: "#f0f9ff", letterSpacing: 1, marginTop: 2,
                   }}>
-                    {s.value}<span style={{ fontSize: 14, color: "#4a6080", marginLeft: 2 }}>{s.unit}</span>
+                    {s.value}<span style={{ fontSize: 14, color: "#6a85a0", marginLeft: 2 }}>{s.unit}</span>
                   </div>
                 </div>
               ))}
@@ -528,9 +528,9 @@ export default function HomePage() {
                           {car.icon}
                         </div>
                         <div>
-                          <div style={{ fontSize: 9, color: "#4a6080", letterSpacing: 2 }}>{car.year}</div>
+                          <div style={{ fontSize: 9, color: "#6a85a0", letterSpacing: 2 }}>{car.year}</div>
                           <div style={{ fontSize: 14, fontWeight: 500, color: "#f0f9ff", letterSpacing: 0.3 }}>{car.name}</div>
-                          <div style={{ fontSize: 9, letterSpacing: 2, color: "#4a6080", marginTop: 2 }}>{car.nickname.toUpperCase()}</div>
+                          <div style={{ fontSize: 9, letterSpacing: 2, color: "#6a85a0", marginTop: 2 }}>{car.nickname.toUpperCase()}</div>
                         </div>
                       </div>
 
@@ -546,7 +546,7 @@ export default function HomePage() {
                             fontFamily: "'Bebas Neue', sans-serif",
                             fontSize: 18, color: "#f0f9ff", lineHeight: 1,
                           }}>{car.health}</div>
-                          <div style={{ fontSize: 7, color: "#4a6080", letterSpacing: 1 }}>%</div>
+                          <div style={{ fontSize: 7, color: "#6a85a0", letterSpacing: 1 }}>%</div>
                         </div>
                       </div>
                     </div>
@@ -571,9 +571,9 @@ export default function HomePage() {
                     {/* Degradation note */}
                     <div style={{
                       paddingTop: 16,
-                      borderTop: "1px solid #1e2d3d",
+                      borderTop: "1px solid #243850",
                       paddingBottom: 12,
-                      fontSize: 9, color: "#2a4a6a", letterSpacing: 1,
+                      fontSize: 9, color: "#3d6080", letterSpacing: 1,
                     }}>
                       {100 - car.health}% CAPACITY LOST SINCE NEW
                     </div>
