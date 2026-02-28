@@ -5,6 +5,7 @@ import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { UserButton } from "@clerk/nextjs";
 
 const degradationData = [
   { month: "Jan", health: 100 }, { month: "Mar", health: 98 },
@@ -159,9 +160,12 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#64748b", letterSpacing: "1px" }}>
-          <span className="live-dot" />
-          LIVE · 2021 MODEL S
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#64748b", letterSpacing: "1px" }}>
+            <span className="live-dot" />
+            LIVE · 2021 MODEL S
+          </div>
+          <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
