@@ -8,416 +8,457 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-// --- Car data (should match your home page) ---
 const CARS = {
-  "model-s": {
-    name: "2021 Tesla Model S",
-    nickname: "Daily Driver",
-    health: 78,
-    range: 312,
-    lastCharge: "2h ago",
-    odometer: "42,381 mi",
-    status: "good",
-  },
-  "model-3": {
-    name: "2023 Tesla Model 3",
-    nickname: "Weekend Car",
-    health: 94,
-    range: 348,
-    lastCharge: "1d ago",
-    odometer: "11,204 mi",
-    status: "excellent",
-  },
-  "bolt": {
-    name: "2020 Chevy Bolt",
-    nickname: "Commuter",
-    health: 61,
-    range: 189,
-    lastCharge: "3d ago",
-    odometer: "67,920 mi",
-    status: "degraded",
-  },
+  "model-s": { name: "Tesla Model S", year: "2021", nickname: "Daily Driver", health: 78, range: 312, daysLeft: 1247, lastCharge: "2h ago", odometer: "42,381 mi", status: "good",      accentColor: "#22c55e" },
+  "model-3": { name: "Tesla Model 3", year: "2023", nickname: "Weekend Car",  health: 94, range: 348, daysLeft: 2891, lastCharge: "1d ago", odometer: "11,204 mi", status: "excellent", accentColor: "#38bdf8" },
+  "bolt":    { name: "Chevy Bolt EV", year: "2020", nickname: "Commuter",     health: 61, range: 189, daysLeft: 548,  lastCharge: "3d ago", odometer: "67,920 mi", status: "degraded",  accentColor: "#f59e0b" },
 };
 
-const DEFAULT_CAR = CARS["model-s"];
-
-// --- Chart data per car ---
 const DEGRADATION_DATA = {
   "model-s": [
-    { month: "Jan", health: 100 }, { month: "Mar", health: 98 },
-    { month: "May", health: 96 }, { month: "Jul", health: 93 },
-    { month: "Sep", health: 90 }, { month: "Nov", health: 87 },
-    { month: "Jan", health: 84 }, { month: "Mar", health: 81 },
-    { month: "Now", health: 78 },
+    {month:"Jan",health:100},{month:"Mar",health:98},{month:"May",health:96},
+    {month:"Jul",health:93},{month:"Sep",health:90},{month:"Nov",health:87},
+    {month:"Jan",health:84},{month:"Mar",health:81},{month:"Now",health:78},
   ],
   "model-3": [
-    { month: "Jan", health: 100 }, { month: "Mar", health: 99 },
-    { month: "May", health: 98 }, { month: "Jul", health: 97 },
-    { month: "Sep", health: 96 }, { month: "Nov", health: 95 },
-    { month: "Jan", health: 95 }, { month: "Mar", health: 94 },
-    { month: "Now", health: 94 },
+    {month:"Jan",health:100},{month:"Mar",health:99},{month:"May",health:98},
+    {month:"Jul",health:97},{month:"Sep",health:96},{month:"Nov",health:95},
+    {month:"Jan",health:95},{month:"Mar",health:94},{month:"Now",health:94},
   ],
   "bolt": [
-    { month: "Jan", health: 100 }, { month: "Mar", health: 96 },
-    { month: "May", health: 91 }, { month: "Jul", health: 86 },
-    { month: "Sep", health: 80 }, { month: "Nov", health: 74 },
-    { month: "Jan", health: 68 }, { month: "Mar", health: 64 },
-    { month: "Now", health: 61 },
+    {month:"Jan",health:100},{month:"Mar",health:96},{month:"May",health:91},
+    {month:"Jul",health:86},{month:"Sep",health:80},{month:"Nov",health:74},
+    {month:"Jan",health:68},{month:"Mar",health:64},{month:"Now",health:61},
   ],
 };
 
-const CYCLE_DATA = {
+// Predicted battery decay over the next ~14 months from current health
+// Each car degrades at a different rate based on historical data
+const PREDICTED_DECAY_DATA = {
   "model-s": [
-    { week: "W1", cycles: 4 }, { week: "W2", cycles: 7 },
-    { week: "W3", cycles: 3 }, { week: "W4", cycles: 6 },
-    { week: "W5", cycles: 5 }, { week: "W6", cycles: 8 },
-    { week: "W7", cycles: 4 }, { week: "W8", cycles: 6 },
+    {month:"Now",health:78},{month:"Feb",health:77.4},{month:"Mar",health:76.9},
+    {month:"Apr",health:76.3},{month:"May",health:75.8},{month:"Jun",health:75.2},
+    {month:"Jul",health:74.7},{month:"Aug",health:74.1},{month:"Sep",health:73.6},
+    {month:"Oct",health:73.0},{month:"Nov",health:72.5},{month:"Dec",health:71.9},
+    {month:"Jan",health:71.4},{month:"Feb",health:70.8},
   ],
   "model-3": [
-    { week: "W1", cycles: 2 }, { week: "W2", cycles: 3 },
-    { week: "W3", cycles: 2 }, { week: "W4", cycles: 4 },
-    { week: "W5", cycles: 3 }, { week: "W6", cycles: 2 },
-    { week: "W7", cycles: 3 }, { week: "W8", cycles: 2 },
+    {month:"Now",health:94},{month:"Feb",health:93.8},{month:"Mar",health:93.6},
+    {month:"Apr",health:93.4},{month:"May",health:93.2},{month:"Jun",health:93.0},
+    {month:"Jul",health:92.8},{month:"Aug",health:92.6},{month:"Sep",health:92.4},
+    {month:"Oct",health:92.2},{month:"Nov",health:92.0},{month:"Dec",health:91.8},
+    {month:"Jan",health:91.6},{month:"Feb",health:91.4},
   ],
   "bolt": [
-    { week: "W1", cycles: 6 }, { week: "W2", cycles: 9 },
-    { week: "W3", cycles: 7 }, { week: "W4", cycles: 8 },
-    { week: "W5", cycles: 9 }, { week: "W6", cycles: 10 },
-    { week: "W7", cycles: 8 }, { week: "W8", cycles: 9 },
+    {month:"Now",health:61},{month:"Feb",health:59.9},{month:"Mar",health:58.8},
+    {month:"Apr",health:57.7},{month:"May",health:56.6},{month:"Jun",health:55.5},
+    {month:"Jul",health:54.4},{month:"Aug",health:53.3},{month:"Sep",health:52.2},
+    {month:"Oct",health:51.1},{month:"Nov",health:50.0},{month:"Dec",health:48.9},
+    {month:"Jan",health:47.8},{month:"Feb",health:46.7},
   ],
 };
 
-// Inner component that uses useSearchParams
+const STATUS_CONFIG = {
+  excellent: { label: "EXCELLENT", color: "#38bdf8" },
+  good:      { label: "GOOD",      color: "#22c55e" },
+  degraded:  { label: "DEGRADED",  color: "#f59e0b" },
+  critical:  { label: "CRITICAL",  color: "#ef4444" },
+};
+
+function AnimatedNumber({ target, duration = 1200 }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    setVal(0);
+    const start = performance.now();
+    const step = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(eased * target));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    const raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return <>{val}</>;
+}
+
+function CustomTooltip({ active, payload, label, accentColor }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "#0d1520", border: `1px solid ${accentColor}44`,
+      borderRadius: 8, padding: "10px 14px",
+      fontSize: 11, fontFamily: "'DM Mono', monospace",
+      boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 0 1px ${accentColor}22`,
+    }}>
+      <div style={{ color: "#4a6080", letterSpacing: 2, marginBottom: 4, fontSize: 9 }}>{label}</div>
+      <div style={{ color: accentColor, fontWeight: 500 }}>
+        {payload[0].value}{payload[0].name === "health" ? "%" : " cycles"}
+      </div>
+    </div>
+  );
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const carId = searchParams.get("car") || "model-s";
-  const car = CARS[carId] || DEFAULT_CAR;
+  const car = CARS[carId] || CARS["model-s"];
   const degradationData = DEGRADATION_DATA[carId] || DEGRADATION_DATA["model-s"];
-  const cycleData = CYCLE_DATA[carId] || CYCLE_DATA["model-s"];
+  const predictedDecayData = PREDICTED_DECAY_DATA[carId] || PREDICTED_DECAY_DATA["model-s"];
+  const status = STATUS_CONFIG[car.status];
+  const ac = car.accentColor;
+  const hc = car.health > 70 ? "#22c55e" : car.health > 40 ? "#f59e0b" : "#ef4444";
 
-  const BATTERY_HEALTH = car.health;
-  const DAYS_LEFT = car.range;
-
-  const [animatedHealth, setAnimatedHealth] = useState(0);
-  const [animatedDays, setAnimatedDays] = useState(0);
-
+  const [time, setTime] = useState("");
   useEffect(() => {
-    setAnimatedHealth(0);
-    setAnimatedDays(0);
-
-    const healthTimer = setTimeout(() => {
-      let start = 0;
-      const step = setInterval(() => {
-        start += 2;
-        if (start >= BATTERY_HEALTH) { setAnimatedHealth(BATTERY_HEALTH); clearInterval(step); }
-        else setAnimatedHealth(start);
-      }, 16);
-    }, 300);
-
-    const daysTimer = setTimeout(() => {
-      let start = 0;
-      const step = setInterval(() => {
-        start += 5;
-        if (start >= DAYS_LEFT) { setAnimatedDays(DAYS_LEFT); clearInterval(step); }
-        else setAnimatedDays(start);
-      }, 10);
-    }, 500);
-
-    return () => { clearTimeout(healthTimer); clearTimeout(daysTimer); };
-  }, [carId]);
-
-  const healthColor = animatedHealth > 70 ? "#16a34a" : animatedHealth > 40 ? "#d97706" : "#dc2626";
-  const healthBg   = animatedHealth > 70 ? "#dcfce7" : animatedHealth > 40 ? "#fef3c7" : "#fee2e2";
-  const statusLabel = animatedHealth > 70 ? "GOOD" : animatedHealth > 40 ? "DEGRADED" : "CRITICAL";
+    const update = () => setTime(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#f0f4f8",
-      color: "#1a202c",
-      fontFamily: "'DM Mono', 'Courier New', monospace",
+      background: "#050a12",
+      fontFamily: "'DM Mono', monospace",
+      color: "#e2e8f0",
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .card {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 28px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+        :root {
+          --surface: #0d1520;
+          --surface2: #111c2d;
+          --border: #1e2d3d;
+          --muted: #4a6080;
+          --green: #22c55e;
         }
 
-        .stat-label {
-          font-size: 10px;
-          letter-spacing: 3px;
-          text-transform: uppercase;
-          color: #94a3b8;
-          margin-bottom: 8px;
+        .grid-bg {
+          position: fixed; inset: 0;
+          background-image:
+            linear-gradient(rgba(34,197,94,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34,197,94,0.025) 1px, transparent 1px);
+          background-size: 40px 40px;
+          pointer-events: none; z-index: 0;
         }
-
-        .health-bar-bg {
-          height: 16px;
-          background: #f1f5f9;
-          border-radius: 99px;
-          overflow: hidden;
-          margin-top: 16px;
-          border: 1px solid #e2e8f0;
-        }
-        .health-bar-fill {
-          height: 100%;
-          border-radius: 99px;
-          transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .segment-bar { display: flex; gap: 3px; margin-top: 10px; }
-        .segment { flex: 1; height: 6px; border-radius: 99px; transition: background 0.3s; }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        .live-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #16a34a;
-          animation: pulse 2s infinite;
-          display: inline-block;
-          margin-right: 6px;
+        .grid-bg::after {
+          content: '';
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34,197,94,0.05) 0%, transparent 70%);
         }
 
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity:0; transform:translateY(16px); }
+          to { opacity:1; transform:translateY(0); }
         }
-        .fade-up { animation: fadeUp 0.5s ease forwards; }
-        .d1 { animation-delay: 0.05s; opacity: 0; }
-        .d2 { animation-delay: 0.15s; opacity: 0; }
-        .d3 { animation-delay: 0.25s; opacity: 0; }
-        .d4 { animation-delay: 0.35s; opacity: 0; }
+        @keyframes pulse {
+          0%,100% { opacity:1; transform:scale(1); }
+          50% { opacity:0.4; transform:scale(0.85); }
+        }
+        @keyframes flicker {
+          0%,100% { opacity:1; } 92% { opacity:1; } 93% { opacity:0.8; } 94% { opacity:1; }
+        }
+        @keyframes healthFill {
+          from { stroke-dashoffset: var(--circ); }
+          to { stroke-dashoffset: var(--offset); }
+        }
+
+        .fade-up { animation: fadeUp 0.55s ease forwards; }
+        .d1 { animation-delay:0.05s; opacity:0; }
+        .d2 { animation-delay:0.12s; opacity:0; }
+        .d3 { animation-delay:0.19s; opacity:0; }
+        .d4 { animation-delay:0.26s; opacity:0; }
+        .d5 { animation-delay:0.33s; opacity:0; }
+
+        .header {
+          background: rgba(5,10,18,0.9);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--border);
+          padding: 0 48px;
+          height: 64px;
+          display: flex; align-items: center; justify-content: space-between;
+          position: sticky; top: 0; z-index: 50;
+        }
+
+        .card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 28px;
+          position: relative; overflow: hidden;
+        }
+        .card::after {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent, var(--card-line, #1e2d3d), transparent);
+        }
+
+        .stat-label {
+          font-size: 9px; letter-spacing: 3px;
+          text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+        }
+
+        .live-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: var(--green); animation: pulse 2s infinite;
+          box-shadow: 0 0 8px var(--green); display: inline-block;
+        }
 
         .back-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(30,45,61,0.6);
+          border: 1px solid var(--border);
+          border-radius: 8px; padding: 7px 14px;
           font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 2px;
-          color: #64748b;
-          background: none;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 7px 14px;
-          cursor: pointer;
+          font-size: 9px; letter-spacing: 2px; color: var(--muted);
+          cursor: pointer; text-transform: uppercase;
           transition: all 0.15s;
-          text-transform: uppercase;
         }
         .back-btn:hover {
-          background: #f1f5f9;
-          color: #0f172a;
-          border-color: #cbd5e1;
+          background: rgba(34,197,94,0.08);
+          border-color: rgba(34,197,94,0.3);
+          color: var(--green);
+        }
+
+        .tag {
+          display: inline-flex; align-items: center;
+          padding: 4px 12px; border-radius: 99px;
+          font-size: 9px; letter-spacing: 2px;
+          border: 1px solid currentColor;
+        }
+
+        .segment-bar { display:flex; gap:3px; margin-top:10px; }
+        .segment { flex:1; height:5px; border-radius:99px; }
+
+        .health-track {
+          height: 10px; background: #1e2d3d;
+          border-radius: 99px; overflow: hidden; margin-top: 14px;
+          border: 1px solid #263548;
+        }
+        .health-fill {
+          height: 100%; border-radius: 99px;
+          transition: width 1.5s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        .voltwatch-logo {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 22px; letter-spacing: 4px; color: #f0f9ff;
+          animation: flicker 8s infinite;
         }
       `}</style>
 
+      <div className="grid-bg" />
+
       {/* Header */}
-      <header style={{
-        background: "#ffffff",
-        borderBottom: "1px solid #e2e8f0",
-        padding: "18px 40px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}>
-        {/* Left: logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      <header className="header" style={{ position: "relative", zIndex: 51 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{
-            width: 38, height: 38,
+            width: 36, height: 36,
             background: "linear-gradient(135deg, #22c55e, #16a34a)",
-            borderRadius: "10px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "20px",
-            boxShadow: "0 2px 8px #16a34a33",
+            borderRadius: 10, display: "flex", alignItems: "center",
+            justifyContent: "center", fontSize: 18,
+            boxShadow: "0 0 16px rgba(34,197,94,0.35)",
           }}>⚡</div>
           <div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "22px", letterSpacing: "3px", color: "#0f172a" }}>
-              VOLTWATCH
-            </div>
-            <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#94a3b8", marginTop: "-2px" }}>
-              EV BATTERY HEALTH TRACKER
+            <div className="voltwatch-logo">VOLTWATCH</div>
+            <div style={{ fontSize: 8, letterSpacing: 3, color: "#1e3a5a", marginTop: -2 }}>
+              EV BATTERY INTELLIGENCE
             </div>
           </div>
         </div>
 
-        {/* Right: car name + live dot + back + user */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#64748b", letterSpacing: "1px" }}>
-            <span className="live-dot" />
-            LIVE · {car.name.toUpperCase()}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{
+            fontSize: 11, letterSpacing: 2, color: "#2a4a6a",
+            fontVariantNumeric: "tabular-nums",
+          }}>
+            {time}
+          </div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            background: `${ac}0d`,
+            border: `1px solid ${ac}25`,
+            borderRadius: 99, padding: "5px 14px",
+            fontSize: 9, letterSpacing: 2, color: ac,
+          }}>
+            <span className="live-dot" style={{ background: ac, boxShadow: `0 0 8px ${ac}` }} />
+            LIVE · {car.year.toUpperCase()} {car.name.toUpperCase()}
           </div>
           <button className="back-btn" onClick={() => router.push("/home")}>
-            ← Garage
+            ← GARAGE
           </button>
           <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </header>
 
-      {/* Car subtitle bar */}
-      <div style={{
-        background: "#fff",
-        borderBottom: "1px solid #f1f5f9",
-        padding: "10px 40px",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px",
-      }}>
-        <span style={{ fontSize: "9px", letterSpacing: "3px", color: "#94a3b8", textTransform: "uppercase" }}>
-          {car.nickname}
-        </span>
-        <span style={{ color: "#e2e8f0" }}>·</span>
-        <span style={{ fontSize: "9px", letterSpacing: "2px", color: "#94a3b8" }}>
-          Odometer: {car.odometer}
-        </span>
-        <span style={{ color: "#e2e8f0" }}>·</span>
-        <span style={{ fontSize: "9px", letterSpacing: "2px", color: "#94a3b8" }}>
-          Last Charged: {car.lastCharge}
-        </span>
-      </div>
+
 
       {/* Main */}
-      <main style={{ padding: "32px 40px", maxWidth: "1100px", margin: "0 auto" }}>
+      <main style={{ padding: "36px 48px", maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 }}>
 
-        {/* Health + Days Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", marginBottom: "16px" }}>
+        {/* Top row: Health card + Predicted Battery Life */}
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
 
           {/* Battery Health */}
-          <div className="card fade-up d1">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="card fade-up d1" style={{ "--card-line": hc }}>
+            {/* Ambient glow */}
+            <div style={{
+              position: "absolute", top: -60, right: -60,
+              width: 200, height: 200,
+              background: `radial-gradient(circle, ${hc}15 0%, transparent 70%)`,
+              pointerEvents: "none",
+            }} />
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
               <div>
                 <div className="stat-label">Battery Health</div>
                 <div style={{
                   fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: "72px",
-                  lineHeight: 1,
-                  color: healthColor,
-                  letterSpacing: "-1px",
+                  fontSize: 88, lineHeight: 1,
+                  color: hc, letterSpacing: -2,
+                  textShadow: `0 0 40px ${hc}44`,
                 }}>
-                  {animatedHealth}<span style={{ fontSize: "32px", color: "#cbd5e1", marginLeft: "2px" }}>%</span>
+                  <AnimatedNumber target={car.health} />
+                  <span style={{ fontSize: 36, color: "#1e2d3d", marginLeft: 4 }}>%</span>
                 </div>
               </div>
-              <div style={{
-                padding: "6px 14px",
-                background: healthBg,
-                color: healthColor,
-                borderRadius: "99px",
-                fontSize: "10px",
-                fontWeight: "500",
-                letterSpacing: "2px",
-                marginTop: "4px",
-              }}>
-                {statusLabel}
+              <div style={{ textAlign: "right" }}>
+                <div className="tag" style={{ color: status.color, borderColor: `${status.color}40` }}>
+                  {status.label}
+                </div>
+                <div style={{ fontSize: 9, color: "#2a4a6a", marginTop: 8, letterSpacing: 2 }}>
+                  {100 - car.health}% DEGRADED
+                </div>
               </div>
             </div>
 
-            <div className="health-bar-bg">
-              <div className="health-bar-fill" style={{
-                width: `${animatedHealth}%`,
-                background: `linear-gradient(90deg, ${healthColor}99, ${healthColor})`,
+            <div className="health-track">
+              <div className="health-fill" style={{
+                width: `${car.health}%`,
+                background: `linear-gradient(90deg, ${hc}66, ${hc})`,
+                boxShadow: `0 0 12px ${hc}66`,
               }} />
             </div>
 
             <div className="segment-bar">
-              {Array.from({ length: 25 }).map((_, i) => (
+              {Array.from({ length: 30 }).map((_, i) => (
                 <div key={i} className="segment" style={{
-                  background: i < Math.floor(animatedHealth / 4) ? healthColor : "#e2e8f0",
+                  background: i < Math.floor(car.health / (100/30)) ? `${hc}cc` : "#1a2535",
+                  boxShadow: i < Math.floor(car.health / (100/30)) ? `0 0 4px ${hc}44` : "none",
                 }} />
               ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
-              <span style={{ fontSize: "9px", color: "#cbd5e1", letterSpacing: "2px" }}>0% CRITICAL</span>
-              <span style={{ fontSize: "9px", color: "#cbd5e1", letterSpacing: "2px" }}>100% OPTIMAL</span>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+              <span style={{ fontSize: 8, color: "#2a4a6a", letterSpacing: 2 }}>0 · CRITICAL</span>
+              <span style={{ fontSize: 8, color: "#2a4a6a", letterSpacing: 2 }}>100 · OPTIMAL</span>
             </div>
           </div>
 
-          {/* Est. Range */}
-          <div className="card fade-up d2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-            <div className="stat-label">Est. Range</div>
+          {/* Predicted Battery Life */}
+          <div className="card fade-up d2" style={{
+            display: "flex", flexDirection: "column",
+            justifyContent: "center", alignItems: "center", textAlign: "center",
+            "--card-line": ac,
+          }}>
+            <div style={{
+              position: "absolute", inset: 0,
+              background: `radial-gradient(ellipse at 50% 50%, ${ac}08 0%, transparent 70%)`,
+              pointerEvents: "none",
+            }} />
+            <div className="stat-label">Predicted Battery Life</div>
             <div style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: "72px",
-              lineHeight: 1,
-              color: "#0f172a",
-              letterSpacing: "-1px",
+              fontSize: 72, lineHeight: 1,
+              color: "#f0f9ff", letterSpacing: -1,
             }}>
-              {animatedDays}
+              <AnimatedNumber target={car.daysLeft} duration={1400} />
             </div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", letterSpacing: "2px", marginTop: "6px" }}>
-              MILES REMAINING
+            <div style={{ fontSize: 9, color: "#4a6080", letterSpacing: 3, marginTop: 6 }}>
+              DAYS REMAINING
+            </div>
+            <div style={{ fontSize: 9, color: "#2a4a6a", letterSpacing: 1, marginTop: 4 }}>
+              ≈ {Math.round(car.daysLeft / 365 * 10) / 10} years
             </div>
             <div style={{
-              marginTop: "16px",
-              padding: "6px 14px",
-              background: "#f1f5f9",
-              borderRadius: "99px",
-              fontSize: "10px",
-              color: "#64748b",
-              letterSpacing: "1px",
+              marginTop: 16, padding: "6px 14px",
+              background: "rgba(30,45,61,0.6)",
+              border: "1px solid #1e2d3d",
+              borderRadius: 99, fontSize: 9, color: "#4a6080", letterSpacing: 1,
             }}>
-              Last charged {car.lastCharge}
+              Based on current degradation rate
             </div>
           </div>
         </div>
 
-        {/* Charts Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        {/* Charts row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
-          {/* Degradation Over Time */}
-          <div className="card fade-up d3">
-            <div style={{ marginBottom: "20px" }}>
+          {/* Degradation */}
+          <div className="card fade-up d4" style={{ "--card-line": hc }}>
+            <div style={{ marginBottom: 20 }}>
               <div className="stat-label">Battery Degradation</div>
-              <div style={{ fontSize: "13px", color: "#64748b" }}>Health over vehicle lifetime</div>
+              <div style={{ fontSize: 12, color: "#4a6080", letterSpacing: 1 }}>Health over vehicle lifetime</div>
             </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={degradationData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={190}>
+              <AreaChart data={degradationData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="healthGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={healthColor} stopOpacity={0.15} />
-                    <stop offset="95%" stopColor={healthColor} stopOpacity={0} />
+                  <linearGradient id={`grad-${carId}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={hc} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={hc} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[60, 100]} tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "11px", fontFamily: "DM Mono", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-                  labelStyle={{ color: "#94a3b8" }}
-                  itemStyle={{ color: healthColor }}
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <YAxis domain={[55, 100]} tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip accentColor={hc} />} />
+                <Area type="monotone" dataKey="health" stroke={hc} strokeWidth={2}
+                  fill={`url(#grad-${carId})`}
+                  dot={{ fill: hc, r: 3, strokeWidth: 0 }}
+                  filter={`drop-shadow(0 0 4px ${hc}66)`}
                 />
-                <Area type="monotone" dataKey="health" stroke={healthColor} strokeWidth={2.5} fill="url(#healthGrad)" dot={{ fill: healthColor, r: 3, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Charge Cycles per Week */}
-          <div className="card fade-up d4">
-            <div style={{ marginBottom: "20px" }}>
-              <div className="stat-label">Charge Cycles</div>
-              <div style={{ fontSize: "13px", color: "#64748b" }}>Per week (last 8 weeks)</div>
+          {/* Predicted Decay */}
+          <div className="card fade-up d5" style={{ "--card-line": ac }}>
+            <div style={{ marginBottom: 20 }}>
+              <div className="stat-label">Predicted Battery Decay</div>
+              <div style={{ fontSize: 12, color: "#4a6080", letterSpacing: 1 }}>Projected health over next 14 months</div>
             </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={cycleData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="week" tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "11px", fontFamily: "DM Mono", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-                  labelStyle={{ color: "#94a3b8" }}
-                  itemStyle={{ color: "#3b82f6" }}
+            <ResponsiveContainer width="100%" height={190}>
+              <AreaChart data={predictedDecayData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={`pred-grad-${carId}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={ac} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={ac} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a2535" vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
+                <YAxis
+                  domain={[
+                    Math.floor(Math.min(...predictedDecayData.map(d => d.health)) - 3),
+                    Math.ceil(Math.max(...predictedDecayData.map(d => d.health)) + 1),
+                  ]}
+                  tick={{ fill: "#2a4a6a", fontSize: 9, fontFamily: "DM Mono" }}
+                  axisLine={false} tickLine={false}
+                  tickFormatter={(v) => `${v}%`}
                 />
-                <Line type="monotone" dataKey="cycles" stroke="#3b82f6" strokeWidth={2.5} dot={{ fill: "#3b82f6", r: 3, strokeWidth: 0 }} />
-              </LineChart>
+                <Tooltip content={<CustomTooltip accentColor={ac} />} />
+                <Area
+                  type="monotone" dataKey="health"
+                  stroke={ac} strokeWidth={2} strokeDasharray="5 3"
+                  fill={`url(#pred-grad-${carId})`}
+                  dot={{ fill: ac, r: 3, strokeWidth: 0 }}
+                  filter={`drop-shadow(0 0 4px ${ac}66)`}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -426,10 +467,9 @@ function DashboardContent() {
   );
 }
 
-// Wrap in Suspense because useSearchParams requires it in Next.js 13+
 export default function Dashboard() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f0f4f8" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#050a12" }} />}>
       <DashboardContent />
     </Suspense>
   );
