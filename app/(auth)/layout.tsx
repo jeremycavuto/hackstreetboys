@@ -9,6 +9,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import { HeroVisualCard } from "@/components/HeroVisualCard";
 
 /* =========================================================
    UTILS
@@ -155,33 +156,28 @@ function Header() {
             </svg>
           </div>
           <div>
-            <div className="text-sm font-semibold text-white">
-              Battery Intelligence Platform
-            </div>
+            <div className="text-sm font-semibold text-white">VoltWatch</div>
             <div className="text-[10px] tracking-[0.22em] text-white/40">
-              MODE-AWARE EV ANALYTICS
+              Battery Intelligence in the palm of your hand
             </div>
           </div>
         </div>
 
         <nav className="hidden items-center gap-7 laptop:flex">
-          <a href="#overview" className="text-sm text-white/70 hover:text-white">
-            Overview
+          <a href="#about" className="text-sm text-white/70 hover:text-white">
+            About us
           </a>
-          <a href="#calibration" className="text-sm text-white/70 hover:text-white">
-            Calibration
+          <a href="#testimonials" className="text-sm text-white/70 hover:text-white">
+            Testimonials
           </a>
           <a href="#stats" className="text-sm text-white/70 hover:text-white">
             Stats
           </a>
-          <a href="#about" className="text-sm text-white/70 hover:text-white">
-            About Us
+          <a href="#plans" className="text-sm text-white/70 hover:text-white">
+            Plans
           </a>
-          <a
-            href="#testimonials"
-            className="text-sm text-white/70 hover:text-white"
-          >
-            Testimonials
+          <a href="#contact" className="text-sm text-white/70 hover:text-white">
+            Contact
           </a>
         </nav>
 
@@ -195,7 +191,7 @@ function Header() {
           <SignedOut>
             <SignInButton mode="modal">
               <button className="rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/15">
-                Sign In
+                Open my dashboard
               </button>
             </SignInButton>
           </SignedOut>
@@ -293,10 +289,7 @@ function Footer() {
       </div>
 
       <div className="mx-auto mt-8 flex w-full max-w-7xl flex-col gap-2 border-t border-white/10 pt-5 text-xs text-white/40 tablet:flex-row tablet:items-center tablet:justify-between">
-        <p>
-          © {new Date().getFullYear()} Battery Intelligence Platform. All rights
-          reserved.
-        </p>
+        <p>© {new Date().getFullYear()} VoltWaTCH. All rights reserved.</p>
         <p>Built for EV battery monitoring • Bayesian calibration • Forecasting</p>
       </div>
     </footer>
@@ -333,205 +326,24 @@ function Wheel({ cx, cy }: { cx: number; cy: number }) {
   );
 }
 
-function HeroVisualCard() {
-  const laneMarkers = Array.from({ length: 20 });
-
-  return (
-    <GlassCard className="h-full">
-      <div className="border-b border-white/10 px-4 py-4 mobile:px-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
-            <span className="text-[10px] tracking-[0.22em] text-white/65 mobile:text-xs">
-              EV BATTERY ANALYTICS
-            </span>
-          </div>
-          <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] tracking-[0.16em] text-emerald-300">
-            LIVE PRODUCT PREVIEW
-          </div>
-        </div>
-
-        <h1 className="mt-4 text-xl font-semibold leading-tight tracking-tight text-white mobile:text-2xl tablet:text-3xl">
-          Predict Battery Health Before It Becomes a Problem
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60 tablet:text-[15px]">
-          A mode-aware EV battery intelligence platform for SOH tracking, resistance
-          estimation, and daily lifespan forecasting — built with time-input Bayesian
-          calibration and physics-constrained outputs.
-        </p>
-      </div>
-
-      <div className="relative h-[340px] mobile:h-[380px] tablet:h-[430px]">
-        <motion.div
-          className="absolute left-0 top-16 h-20 w-44 bg-cyan-400/10 blur-2xl"
-          animate={{ x: [0, 260, 0], opacity: [0.15, 0.45, 0.15] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute right-8 top-24 h-16 w-36 bg-blue-400/10 blur-2xl"
-          animate={{ x: [0, -140, 0], opacity: [0.1, 0.35, 0.1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Road */}
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute inset-x-0 bottom-11 h-[3px] bg-white/10" />
-        <div className="absolute inset-x-0 bottom-15 h-[2px] bg-cyan-300/20" />
-
-        {/* Moving lane markers */}
-        <div className="absolute inset-x-0 bottom-[52px] h-4 overflow-hidden">
-          <div className="relative h-full w-full">
-            {laneMarkers.map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute top-1/2 h-[3px] w-12 -translate-y-1/2 rounded-full bg-amber-200/80"
-                style={{ left: `${i * 90}px` }}
-                animate={{ x: [0, -1900] }}
-                transition={{
-                  duration: 5.2,
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: i * 0.02,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Car */}
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center px-2"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div
-            className="relative"
-            animate={{ y: [0, -3, 0], x: [-18, 10, -18] }}
-            transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="absolute inset-0 scale-110 rounded-full bg-cyan-400/10 blur-3xl" />
-
-            <svg
-              width="560"
-              height="240"
-              viewBox="0 0 560 240"
-              className="w-[96%] max-w-[560px]"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <ellipse cx="280" cy="190" rx="165" ry="16" fill="rgba(34,211,238,0.15)" />
-
-              <motion.path
-                d="M96 159
-                   C118 136,150 120,193 113
-                   L238 102
-                   C264 96,305 96,333 104
-                   L373 116
-                   C401 124,422 137,442 159
-                   L470 159
-                   C479 159,486 166,486 175
-                   L486 179
-                   C486 188,479 195,470 195
-                   L460 195
-                   C456 209,441 220,424 220
-                   C407 220,392 209,388 195
-                   L164 195
-                   C160 209,145 220,128 220
-                   C111 220,96 209,92 195
-                   L80 195
-                   C71 195,64 188,64 179
-                   L64 175
-                   C64 166,71 159,80 159
-                   L96 159Z"
-                stroke="rgba(125,211,252,0.95)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="rgba(255,255,255,0.02)"
-                initial={{ pathLength: 0.15, opacity: 0.4 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1.8 }}
-              />
-
-              <path
-                d="M176 118 L246 106 C269 101 302 101 324 108 L372 119"
-                stroke="rgba(34,211,238,0.8)"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-
-              <path d="M258 108 L248 160" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-
-              <motion.path
-                d="M439 156 L465 156"
-                stroke="rgba(34,211,238,1)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.4, repeat: Infinity }}
-              />
-
-              <motion.path
-                d="M82 160 L98 160"
-                stroke="rgba(59,130,246,0.95)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                animate={{ opacity: [0.25, 0.9, 0.25] }}
-                transition={{ duration: 2.0, repeat: Infinity }}
-              />
-
-              <Wheel cx={128} cy={195} />
-              <Wheel cx={424} cy={195} />
-            </svg>
-          </motion.div>
-        </motion.div>
-
-        {/* Bottom preview cards */}
-        <div className="absolute bottom-4 left-4 right-4 grid grid-cols-1 gap-3 tablet:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md">
-            <div className="mb-2 flex items-center justify-between text-xs text-white/60">
-              <span>Battery Health</span>
-              <span className="font-medium text-white/85">92%</span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400"
-                initial={{ width: "0%" }}
-                animate={{ width: "92%" }}
-                transition={{ duration: 1.4 }}
-              />
-            </div>
-            <p className="mt-2 text-[11px] text-white/50">
-              Physics-enforced SOH estimate (no nonphysical rebound)
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md">
-            <div className="mb-2 text-xs text-white/60">Mode-Aware Forecast</div>
-            <div className="flex items-center gap-2 text-sm text-white/90">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.8)]" />
-              Driving / Rest model switching active
-            </div>
-            <p className="mt-2 text-[11px] text-white/50">
-              Hourly monitoring • Daily RUL and total lifespan forecasting
-            </p>
-          </div>
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
-
+<HeroVisualCard />
 /* =========================================================
-   CLERK AUTH BLOCK (REAL CLERK, NOT FAKE FORM)
+   CLERK AUTH BLOCK — with inline stats below buttons
 ========================================================= */
+
+const heroStats = [
+  { label: "Vehicles Monitored", value: 1280, suffix: "+", decimals: 0 },
+  { label: "Forecast Accuracy", value: 96.4, suffix: "%", decimals: 1 },
+  { label: "Mode Detection", value: 98.7, suffix: "%", decimals: 1 },
+  { label: "Events Logged", value: 18420, suffix: "+", decimals: 0 },
+] as const;
 
 function ClerkAuthCard() {
   return (
-    <GlassCard className="h-full">
+    <GlassCard className="h-fit laptop:mt-20">
       <div className="absolute -inset-[1px] rounded-3xl bg-gradient-to-b from-cyan-400/20 via-blue-500/10 to-emerald-400/10 blur-sm" />
       <div className="relative z-10 h-full p-5 mobile:p-6 tablet:p-8">
+        {/* ── Header ── */}
         <p className="text-xs tracking-[0.22em] text-cyan-300/80">WELCOME</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white tablet:text-3xl">
           Access your battery intelligence workspace
@@ -541,13 +353,13 @@ function ClerkAuthCard() {
           mode-aware forecasting pipelines securely.
         </p>
 
+        {/* ── Auth buttons ── */}
         <div className="mt-6">
           <SignedOut>
-            {/* This preserves Clerk auth (no fake form). Modal keeps homepage layout clean. */}
             <div className="space-y-3">
               <SignInButton mode="modal">
                 <button className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(34,211,238,0.25)] transition hover:brightness-110">
-                  Sign In with Clerk
+                  Sign In
                 </button>
               </SignInButton>
 
@@ -557,27 +369,6 @@ function ClerkAuthCard() {
                 </button>
               </SignUpButton>
             </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 mobile:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-[11px] tracking-[0.14em] text-white/45">SECURITY</div>
-                <div className="mt-1 text-sm text-white/85">Clerk-managed auth</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-[11px] tracking-[0.14em] text-white/45">ACCESS</div>
-                <div className="mt-1 text-sm text-white/85">Role-ready dashboards</div>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs tracking-[0.18em] text-white/45">
-                FOR YOUR EXISTING CLERK UI
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-white/65">
-                If you want the full embedded Clerk sign-in widget here (instead of modal),
-                replace this button block with your existing Clerk component container.
-              </p>
-            </div>
           </SignedOut>
 
           <SignedIn>
@@ -586,7 +377,7 @@ function ClerkAuthCard() {
                 <div>
                   <div className="text-xs tracking-[0.16em] text-white/45">SESSION</div>
                   <div className="mt-1 text-lg font-semibold text-white">
-                    You’re signed in
+                    You're signed in
                   </div>
                   <p className="mt-1 text-sm text-white/60">
                     Open the monitoring dashboard or continue to your forecasting tools.
@@ -613,8 +404,30 @@ function ClerkAuthCard() {
           </SignedIn>
         </div>
 
-        <div className="mt-6 border-t border-white/10 pt-4 text-xs text-white/45">
-          Protected access • Session management • Production-ready authentication
+        {/* ── Stats grid ── */}
+        <div className="mt-5 border-t border-white/10 pt-5">
+          <p className="mb-3 text-[10px] tracking-[0.2em] text-white/35 uppercase">
+            Platform metrics
+          </p>
+          <div id="stats" className="grid grid-cols-2 gap-3">
+            {heroStats.map((s) => (
+              <div
+                key={s.label}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+              >
+                <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+                  {s.label}
+                </div>
+                <div className="mt-1.5 text-xl font-semibold tracking-tight text-white">
+                  <AnimatedCounter
+                    value={s.value}
+                    suffix={s.suffix}
+                    decimals={s.decimals ?? 0}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </GlassCard>
@@ -622,44 +435,8 @@ function ClerkAuthCard() {
 }
 
 /* =========================================================
-   STATS + FEATURES
+   FEATURES (previously paired with StatsCard — now standalone)
 ========================================================= */
-
-function StatsCard() {
-  const stats = [
-    { label: "Vehicles Monitored", value: 1280, suffix: "+" },
-    { label: "Forecast Accuracy", value: 96.4, suffix: "%", decimals: 1 },
-    { label: "Mode Detection Precision", value: 98.7, suffix: "%", decimals: 1 },
-    { label: "Battery Events Logged", value: 18420, suffix: "+" },
-  ] as const;
-
-  return (
-    <GlassCard className="h-full p-5 mobile:p-6 tablet:p-8">
-      <SectionLabel
-        eyebrow="Performance Metrics"
-        title="Built for high-confidence battery monitoring"
-        subtitle="Track health, detect driving vs rest, and forecast battery lifespan with stable daily outputs."
-      />
-
-      <div id="stats" className="mt-6 grid grid-cols-1 gap-4 mobile:grid-cols-2">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-white/45">
-              {s.label}
-            </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-white mobile:text-3xl">
-              <AnimatedCounter
-                value={s.value}
-                suffix={s.suffix}
-                decimals={s.decimals ?? 0}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </GlassCard>
-  );
-}
 
 function FeaturesCard() {
   const features = [
@@ -730,7 +507,7 @@ function FeaturesCard() {
 }
 
 /* =========================================================
-   TISAC / BAYESIAN CALIBRATION SECTION (NEW)
+   TISAC / BAYESIAN CALIBRATION SECTION
 ========================================================= */
 
 function TISACCalibrationCard() {
@@ -848,9 +625,7 @@ function MethodFlowCard() {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">{s.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-white/60">
-                  {s.desc}
-                </p>
+                <p className="mt-1 text-sm leading-relaxed text-white/60">{s.desc}</p>
               </div>
             </div>
           </motion.div>
@@ -1117,7 +892,7 @@ function StatusMini({
 }
 
 /* =========================================================
-   ABOUT US STARTUP SECTION (NEW)
+   ABOUT US STARTUP SECTION
 ========================================================= */
 
 function AboutUsCard() {
@@ -1133,7 +908,7 @@ function AboutUsCard() {
       <div id="about">
         <SectionLabel
           eyebrow="About Us"
-          title="We’re a startup building trustworthy battery intelligence tools"
+          title="We're a startup building trustworthy battery intelligence tools"
           subtitle="Our mission is to make EV battery monitoring more actionable by combining calibration science, modern AI workflows, and operator-friendly product design."
         />
       </div>
@@ -1183,10 +958,26 @@ function AboutUsCard() {
 
 function StartupRoadmapCard() {
   const roadmap = [
-    { q: "Now", t: "Mode-aware SOH / RUL monitoring", d: "Driving + rest model routing, physics-enforced trends, daily forecasting." },
-    { q: "Next", t: "API + dashboard deployment stack", d: "Connect saved model files to backend APIs and production telemetry streams." },
-    { q: "Next+", t: "Fleet analytics & alerting", d: "Portfolio-level battery health summaries, risk thresholds, and maintenance prioritization." },
-    { q: "Future", t: "Adaptive online calibration", d: "Continuous updating from incoming telemetry with uncertainty-aware recalibration." },
+    {
+      q: "Now",
+      t: "Mode-aware SOH / RUL monitoring",
+      d: "Driving + rest model routing, physics-enforced trends, daily forecasting.",
+    },
+    {
+      q: "Next",
+      t: "API + dashboard deployment stack",
+      d: "Connect saved model files to backend APIs and production telemetry streams.",
+    },
+    {
+      q: "Next+",
+      t: "Fleet analytics & alerting",
+      d: "Portfolio-level battery health summaries, risk thresholds, and maintenance prioritization.",
+    },
+    {
+      q: "Future",
+      t: "Adaptive online calibration",
+      d: "Continuous updating from incoming telemetry with uncertainty-aware recalibration.",
+    },
   ];
 
   return (
@@ -1270,7 +1061,7 @@ function TestimonialsCard() {
                 </svg>
               ))}
             </div>
-            <p className="text-sm leading-relaxed text-white/75">“{t.quote}”</p>
+            <p className="text-sm leading-relaxed text-white/75">"{t.quote}"</p>
             <div className="mt-4 border-t border-white/10 pt-3">
               <div className="text-sm font-semibold text-white">{t.name}</div>
               <div className="text-xs tracking-[0.14em] text-white/45">{t.company}</div>
@@ -1293,9 +1084,7 @@ function CTACard() {
 
       <div className="mt-6 grid grid-cols-1 gap-3 mobile:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-[11px] tracking-[0.16em] text-white/45">
-            MODEL FILES
-          </div>
+          <div className="text-[11px] tracking-[0.16em] text-white/45">MODEL FILES</div>
           <div className="mt-2 text-sm font-medium text-white/90">
             Driving + Rest artifacts
           </div>
@@ -1305,9 +1094,7 @@ function CTACard() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-[11px] tracking-[0.16em] text-white/45">
-            FORECASTING
-          </div>
+          <div className="text-[11px] tracking-[0.16em] text-white/45">FORECASTING</div>
           <div className="mt-2 text-sm font-medium text-white/90">
             Hourly monitoring • Daily RUL
           </div>
@@ -1385,17 +1172,14 @@ export default function HomePage() {
           className="px-4 py-5 mobile:px-5 mobile:py-6 tablet:px-8 tablet:py-8"
         >
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 laptop:gap-6">
-            {/* ROW 1: HERO + CLERK AUTH */}
+            {/* ROW 1: HERO + CLERK AUTH (now includes stats) */}
             <TwoColRow>
               <HeroVisualCard />
               <ClerkAuthCard />
             </TwoColRow>
 
-            {/* ROW 2: STATS + FEATURES */}
-            <TwoColRow>
-              <StatsCard />
-              <FeaturesCard />
-            </TwoColRow>
+            {/* ROW 2: FEATURES (full width now that StatsCard is merged into auth card) */}
+            <FeaturesCard />
 
             {/* ROW 3: TISAC / BAYESIAN CALIBRATION + PIPELINE */}
             <TwoColRow>
